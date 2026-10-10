@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Wheel Mini App - Ultimate Pro</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0b4f23;
+            color: #ffffff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 15px;
+        }
+        .profile-icon {
+            width: 35px; height: 35px; background: #2980b9; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+        }
+        .view-section {
+            display: none; flex-grow: 1; padding: 15px; overflow-y: auto; flex-direction: column; align-items: center;
+        }
+        .view-section.active-view { display: flex; }
+
+        /* Wheel Styles */
+        .progress-container {
+            width: 80%; background-color: rgba(0,0,0,0.3); border-radius: 15px; padding: 3px; margin-bottom: 20px; border: 1px solid #d4af37;
+        }
+        .progress-bar-fill { width: 0%; height: 18px; background-color: #ffcc00; border-radius: 12px; transition: width 0.3s ease; }
+        .wheel-wrapper { position: relative; width: 260px; height: 260px; margin-top: 10px; }
+        .wheel {
+            width: 100%; height: 100%; border-radius: 50%; border: 6px solid #d4af37;
+            background: conic-gradient(#f1c40f 0deg 45deg, #e74c3c 45deg 90deg, #9b59b6 90deg 135deg, #34495e 135deg 180deg, #f39c12 180deg 225deg, #3498db 225deg 270deg, #1abc9c 270deg 315deg, #7f8c8d 315deg 360deg);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5); position: relative;
+        }
+        .wheel-label { position: absolute; font-size: 11px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; transform: translate(-50%, -50%); }
+        .spin-center-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 75px; height: 75px; background: radial-gradient(circle, #00b09b, #075a37);
+            border: 4px solid #ffffff; border-radius: 50%; color: white; font-weight: bold; font-size: 14px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 5;
+        }
+        .spin-center-btn:disabled { background: #7f8c8d; cursor: not-allowed; }
+        .pointer {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 24px solid #ffcc00; z-index: 10;
+        }
+
+        /* Cards & Inputs */
+        .card-box {
+            background: rgba(0, 0, 0, 0.3); border: 1px solid #d4af37; padding: 12px; border-radius: 10px; width: 100%; max-width: 350px; margin-bottom: 12px;
+        }
+        .card-box h3 { color: #ffcc00; margin-bottom: 8px; font-size: 15px; }
+        .app-input, .app-select { width: 100%; padding: 8px; margin-bottom: 8px; background: #fff; border: none; border-radius: 5px; color: #000; font-size: 13px; }
+        .app-btn { background: #f1c40f; border: none; padding: 8px 15px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; color: #000; font-size: 13px; }
+        .stats-grid { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+        .stat-card { background: #1e8449; padding: 8px; border-radius: 5px; flex: 1; text-align: center; }
+        .withdraw-item { background: #27ae60; padding: 8px; border-radius: 5px; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+
+        .market-item, .event-btn-item {
+            background: #1e8449; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 350px; font-size: 13px;
+        }
+        .market-item span.up { color: #2ecc71; font-weight: bold; }
+        .market-item span.down { color: #e74c3c; font-weight: bold; }
+
+        /* Profile Avatar Style */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .avatar-img {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: 2px solid #ffcc00;
+            object-fit: cover;
+            background-color: #2980b9;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            background-color: rgba(0, 0, 0, 0.4); display: flex; justify-content: space-around; padding: 8px 0; border-top-left-radius: 20px; border-top-right-radius: 20px;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: #dcdcdc; gap: 3px; cursor: pointer; background: none; border: none; }
+        .nav-icon { width: 26px; height: 26px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+        .nav-item.active { color: #ffcc00; }
+        .nav-item.active .nav-icon { background: #ffcc00; color: #0b4f23; font-weight: bold; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: #1e8449; padding: 20px; border-radius: 15px; text-align: center; width: 80%; max-width: 300px; border: 2px solid #d4af37; }
+        .modal-content button { background: #f1c40f; border: none; padding: 8px 15px; font-weight: bold; border-radius: 15px; cursor: pointer; margin-top: 12px; color: #000; }
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="profile-icon" onclick="switchTab('My')">👤</div>
+    </div>
+
+    <!-- 1. WHEEL VIEW -->
+    <div id="view-Wheel" class="view-section active-view">
+        <div class="progress-container">
+            <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+        <div class="wheel-wrapper">
+            <div class="pointer"></div>
+            <div class="wheel" id="wheel">
+                <div class="wheel-label" style="top: 22%; left: 62%;">5ks</div>
+                <div class="wheel-label" style="top: 38%; left: 78%;">Thank You</div>
+                <div class="wheel-label" style="top: 65%; left: 75%;">10ks</div>
+                <div class="wheel-label" style="top: 78%; left: 58%;">Thank You</div>
+                <div class="wheel-label" style="top: 78%; left: 38%;">15ks</div>
+                <div class="wheel-label" style="top: 62%; left: 22%;">Thank You</div>
+                <div class="wheel-label" style="top: 38%; left: 22%;">20ks</div>
+                <div class="wheel-label" style="top: 22%; left: 40%;">50ks</div>
+            </div>
+            <button class="spin-center-btn" id="spinBtn" onclick="startAdCountdown('spin')">SPIN</button>
+        </div>
+    </div>
+
+    <!-- 2. EARN VIEW -->
+    <div id="view-Earn" class="view-section" style="justify-content: flex-start;">
+        <h2 style="margin-bottom: 12px; color: #ffcc00;">📈 Live Market & Earn</h2>
+        
+        <div class="card-box">
+            <h3>💱 Coin to MMK Exchange</h3>
+            <p style="font-size: 12px; color: #f1c40f; margin-bottom: 6px;" id="rateInfoText">Rate: 1 Coin = 10 MMK</p>
+            <p style="font-size: 12px; margin-bottom: 5px;">Ads Coins Available: <span id="earnAdsCoins">500</span> Coins</p>
+            <input type="number" id="marketCoinInput" class="app-input" placeholder="ထည့်ရန် Coin ပမာဏ" style="margin-top:5px;">
+            <button class="app-btn" onclick="marketConvertCoins()">Convert to MMK</button>
+        </div>
+
+        <h3 style="color: #ffcc00; font-size: 14px; margin-bottom: 8px; align-self: flex-start;">Digital Assets Live Price</h3>
+        <div class="market-item"><span>Bitcoin (BTC)</span><span id="btcPrice" class="up">$64,250.00 (+2.4%)</span></div>
+        <div class="market-item"><span>Ethereum (ETH)</span><span id="ethPrice" class="up">$3,420.50 (+1.8%)</span></div>
+        <div class="market-item"><span>Toncoin (TON)</span><span id="tonPrice" class="down">$5.65 (-0.5%)</span></div>
+    </div>
+
+    <!-- 3. EVENTS VIEW -->
+    <div id="view-Events" class="view-section" style="justify-content: flex-start;">
+        <h2 style="margin-bottom: 12px; color: #ffcc00;">🎉 Watch Ads & Earn</h2>
+        <p style="font-size: 12px; margin-bottom: 15px; text-align: center;">ကြော်ငြာ ၁၅ စက္ကန့်ကြည့်ပြီး Coin များကို ရယူပါ</p>
+        
+        <div class="event-btn-item"><span>Ad Task 1</span><button class="app-btn" style="width: auto; padding: 5px 12px;" onclick="startAdCountdown('event', 1)">Watch Ad</button></div>
+        <div class="event-btn-item"><span>Ad Task 2</span><button class="app-btn" style="width: auto; padding: 5px 12px;" onclick="startAdCountdown('event', 2)">Watch Ad</button></div>
+        <div class="event-btn-item"><span>Ad Task 3</span><button class="app-btn" style="width: auto; padding: 5px 12px;" onclick="startAdCountdown('event', 3)">Watch Ad</button></div>
+        <div class="event-btn-item"><span>Ad Task 4</span><button class="app-btn" style="width: auto; padding: 5px 12px;" onclick="startAdCountdown('event', 4)">Watch Ad</button></div>
+        <div class="event-btn-item"><span>Ad Task 5</span><button class="app-btn" style="width: auto; padding: 5px 12px;" onclick="startAdCountdown('event', 5)">Watch Ad</button></div>
+    </div>
+
+    <!-- 4. ADMIN PANEL (Hidden, Tap avatar 5 times) -->
+    <div id="view-Admin" class="view-section" style="justify-content: flex-start;">
+        <h2 style="margin-bottom: 12px; color: #ffcc00;">🛡️ Admin Panel</h2>
+        
+        <div class="card-box">
+            <h3>📊 User Statistics</h3>
+            <p style="font-size: 13px; margin-bottom: 8px; color: #00ffcc;"><b>Total Users:</b> <span id="adminTotalUsers">1,557</span></p>
+            <div class="stats-grid">
+                <div class="stat-card"><small>Active</small><h4>1,245</h4></div>
+                <div class="stat-card"><small>Non-Active</small><h4>312</h4></div>
+            </div>
+        </div>
+
+        <div class="card-box">
+            <h3>🔍 Search & Manage User (TG ID)</h3>
+            <input type="text" id="searchTgIdInput" class="app-input" placeholder="Enter Telegram ID (e.g. @thiha_1990)">
+            <button class="app-btn" onclick="searchUserByTgId()">Search User</button>
+            <div id="searchResultBox" style="margin-top: 8px; font-size: 12px; display:none;">
+                <p>User: <span id="resUserName">-</span> | Status: <span id="resUserStatus" style="color:#2ecc71;">Active</span></p>
+                <button id="banUnbanBtn" class="app-btn" style="background:#e74c3c; color:#fff; margin-top:5px;" onclick="toggleBanUser()">Ban User</button>
+            </div>
+        </div>
+
+        <div class="card-box">
+            <h3>🔗 Ads Link Management</h3>
+            <label style="font-size: 11px;">Ad / Smartlink URL:</label>
+            <input type="text" id="adminAdsLinkInput" class="app-input" placeholder="https://example.com/ad-link" style="margin-top: 5px;">
+            <button class="app-btn" onclick="saveAdminAdsLink()">Save Ads Link</button>
+        </div>
+
+        <div class="card-box">
+            <h3>⚙️ Coin to MMK Rate Setting</h3>
+            <label style="font-size: 11px;">1 Coin to MMK Value:</label>
+            <input type="number" id="adminRateInput" class="app-input" value="10" style="margin-top: 5px;">
+            <button class="app-btn" onclick="saveAdminRate()">Save Rate Setting</button>
+        </div>
+
+        <div class="card-box">
+            <h3>⚙️ Ad Reward Setting</h3>
+            <label style="font-size: 11px;">Coin per Ad Watch:</label>
+            <input type="number" id="adminAdCoin" class="app-input" value="100" style="margin-top: 5px;">
+            <button class="app-btn" onclick="saveAdCoinSetting()">Save Coin Amount</button>
+        </div>
+
+        <div class="card-box">
+            <h3>💸 Withdrawal Requests</h3>
+            <div id="withdrawList">
+                <div class="withdraw-item" id="req-1">
+                    <span>099123456 (WavePay) - 2000 MMK</span>
+                    <button style="background:#e74c3c; color:#fff; border:none; padding:3px 6px; border-radius:3px; cursor:pointer;" onclick="approveWithdraw('req-1', 2000)">Approve</button>
+                </div>
+            </div>
+        </div>
+        <button class="app-btn" style="background:#e74c3c; color:#fff; margin-top:10px;" onclick="switchTab('My')">Back to Profile</button>
+    </div>
+
+    <!-- 5. MY PROFILE VIEW -->
+    <div id="view-My" class="view-section" style="justify-content: flex-start;">
+        <h2 style="margin-bottom: 12px; color: #ffcc00;">👤 My Profile</h2>
+        
+        <div class="card-box" style="text-align: left;">
+            <!-- Profile with Avatar (Tap 5 times here to open admin prompt) -->
+            <div class="profile-header" onclick="handleAvatarTap()">
+                <img src="https://via.placeholder.com/150" alt="Avatar" class="avatar-img" id="profileAvatar">
+                <div>
+                    <p style="font-size: 14px; font-weight: bold;" id="profileName">Thiha (Ko Ko)</p>
+                    <p style="font-size: 12px; color: #ccc;" id="profileTgId">@thiha_1990</p>
+                </div>
+            </div>
+            
+            <hr style="border-color: #d4af37; margin: 10px 0;">
+            <p style="font-size: 13px;">Spin Win (MMK): <span id="spinMmkBalance" style="color:#f1c40f; font-weight:bold;">50</span> MMK</p>
+            <p style="font-size: 13px; margin-bottom: 8px;">Ads Coin (Unconverted): <span id="profileAdsCoins" style="color:#2ecc71; font-weight:bold;">500</span> Coins</p>
+            <p style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">Total Consolidated MMK: <span id="totalConsolidatedMmk" style="color:#00ffcc;">100</span> MMK</p>
+        </div>
+
+        <div class="card-box" style="text-align: left;">
+            <h3 style="margin-bottom: 8px;">💳 ငွေထုတ်ရန် အချက်အလက်</h3>
+            <label style="font-size: 11px;">ငွေလက်ခံမည့် ငွေပေးချေမှုစနစ်:</label>
+            <select id="payMethod" class="app-select" style="margin-top: 4px;">
+                <option value="KBZPay">KBZPay</option>
+                <option value="WavePay">WavePay</option>
+                <option value="CBPay">CBPay</option>
+            </select>
+            <label style="font-size: 11px;">ဖုန်းနံပတ် / အကောင့်နံပတ်:</label>
+            <input type="text" id="payPhoneNumber" class="app-input" placeholder="ဥပမာ - 09912345678" style="margin-top: 4px;">
+            <button class="app-btn" onclick="requestWithdraw()" style="margin-top: 5px;">Request Withdraw</button>
+        </div>
+    </div>
+
+    <!-- ADVERTISEMENT MODAL -->
+    <div class="modal" id="adModal">
+        <div class="modal-content">
+            <h3>🎥 Watch Ad</h3>
+            <p id="adTimerText">Please watch ads for <span id="countdown">15</span> seconds...</p>
+            <button id="claimSpinBtn" style="display:none;" onclick="claimAdReward()">Claim Reward!</button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('Wheel')"><div class="nav-icon">W</div>Wheel</button>
+        <button class="nav-item" onclick="switchTab('Earn')"><div class="nav-icon">E</div>Earn</button>
+        <button class="nav-item" onclick="switchTab('Events')"><div class="nav-icon">Ev</div>Events</button>
+        <button class="nav-item" onclick="switchTab('My')"><div class="nav-icon">M</div>My</button>
+    </div>
+
+    <script>
+        let currentSpinCount = 0;
+        const maxSpins = 5;
+        let spinMmkBalance = 50;   
+        let adsCoins = 500;        
+        let rewardCoinPerAd = 100; 
+        let coinToMmkRate = 10;    
+        let activeAdsLink = "";    
+        let currentTaskType = 'spin';
+        let timerInterval;
+
+        // User Data Mock for Search & Ban/Unban
+        let sampleUsers = {
+            "@thiha_1990": { name: "Thiha (Ko Ko)", status: "Active" },
+            "@user123": { name: "Aung Aung", status: "Active" },
+            "@mgmg99": { name: "Mg Mg", status: "Banned" }
+        };
+        let searchedUserTg = "";
+
+        // Hidden Admin Tap Counter
+        let avatarTapCount = 0;
+
+        function handleAvatarTap() {
+            avatarTapCount++;
+            if (avatarTapCount >= 5) {
+                avatarTapCount = 0;
+                let pass = prompt("Enter Admin Password:");
+                if (pass === "12345") {
+                    switchTab('Admin');
+                } else if (pass !== null) {
+                    alert("Incorrect Password!");
+                }
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
+            document.getElementById('view-' + tabName).classList.add('active-view');
+            
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
+            event && event.currentTarget && event.currentTarget.classList.add && event.currentTarget.classList.add('active');
+            
+            updateDisplayValues();
+        }
+
+        function updateDisplayValues() {
+            document.getElementById('profileAdsCoins').innerText = adsCoins;
+            document.getElementById('earnAdsCoins').innerText = adsCoins;
+            document.getElementById('spinMmkBalance').innerText = spinMmkBalance;
+            let convertedAdsMmk = adsCoins * coinToMmkRate;
+            let totalMmk = spinMmkBalance + convertedAdsMmk;
+            document.getElementById('totalConsolidatedMmk').innerText = totalMmk;
+            document.getElementById('rateInfoText').innerText = `Rate: 1 Coin = ${coinToMmkRate} MMK (Admin Set)`;
+        }
+
+        // Admin Search User Function
+        function searchUserByTgId() {
+            let tgId = document.getElementById('searchTgIdInput').value.trim();
+            if (!tgId) {
+                alert("ကျေးဇူးပြု၍ Telegram ID ထည့်ပါ။");
+                return;
+            }
+            if (sampleUsers[tgId]) {
+                searchedUserTg = tgId;
+                document.getElementById('resUserName').innerText = sampleUsers[tgId].name;
+                let status = sampleUsers[tgId].status;
+                document.getElementById('resUserStatus').innerText = status;
+                document.getElementById('resUserStatus').style.color = status === "Active" ? "#2ecc71" : "#e74c3c";
+                
+                let btn = document.getElementById('banUnbanBtn');
+                if (status === "Active") {
+                    btn.innerText = "Ban User";
+                    btn.style.background = "#e74c3c";
+                } else {
+                    btn.innerText = "Unban User";
+                    btn.style.background = "#2ecc71";
+                }
+                document.getElementById('searchResultBox').style.display = 'block';
+            } else {
+                alert("User not found!");
+                document.getElementById('searchResultBox').style.display = 'none';
+            }
+        }
+
+        function toggleBanUser() {
+            if (searchedUserTg && sampleUsers[searchedUserTg]) {
+                if (sampleUsers[searchedUserTg].status === "Active") {
+                    sampleUsers[searchedUserTg].status = "Banned";
+                    alert(`User ${searchedUserTg} has been Banned.`);
+                } else {
+                    sampleUsers[searchedUserTg].status = "Active";
+                    alert(`User ${searchedUserTg} has been Unbanned.`);
+                }
+                searchUserByTgId();
+            }
+        }
+
+        // Market Converter
+        function marketConvertCoins() {
+            let inputCoin = parseInt(document.getElementById('marketCoinInput').value);
+            if (!inputCoin || inputCoin <= 0) {
+                alert("ကျေးဇူးပြု၍ မှန်ကန်သော Coin ပမာဏ ထည့်ပါ။");
+                return;
+            }
+            if (inputCoin > adsCoins) {
+                alert("လက်ကျန် Coin မလုံလောက်ပါ။");
+                return;
+            }
+            adsCoins -= inputCoin;
+            let addedMmk = inputCoin * coinToMmkRate;
+            spinMmkBalance += addedMmk;
+            document.getElementById('marketCoinInput').value = '';
+            updateDisplayValues();
+            alert(`Successfully converted ${inputCoin} coins to ${addedMmk} MMK!`);
+        }
+
+        // Live Market Simulation
+        setInterval(() => {
+            let btcVar = (Math.random() * 10 - 4.8).toFixed(2);
+            document.getElementById('btcPrice').innerText = `$64,250.00 (${btcVar >= 0 ? '+' : ''}${btcVar}%)`;
+            document.getElementById('btcPrice').className = btcVar >= 0 ? 'up' : 'down';
+        }, 3000);
+
+        function startAdCountdown(type) {
+            if (type === 'spin' && currentSpinCount >= maxSpins) {
+                alert("အပေါ်တန်း ပြည့်သွားပါပြီ။ ထပ်မံလှည့်ခွင့် မရှိတော့ပါ[span_1](start_span)[span_1](end_span)။");
+                return;
+            }
+            currentTaskType = type;
+            let timeLeft = 15;
+            document.getElementById('countdown').innerText = timeLeft;
+            document.getElementById('claimSpinBtn').style.display = 'none';
+            document.getElementById('adTimerText').style.display = 'block';
+            document.getElementById('adModal').style.display = 'flex';
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('countdown').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('adTimerText').style.display = 'none';
+                    document.getElementById('claimSpinBtn').style.display = 'inline-block';
+                    
+                    if (activeAdsLink) {
+                        console.log("Opening Ad Link: " + activeAdsLink);
+                    }
+                }
+            }, 1000);
+        }
+
+        function claimAdReward() {
+            document.getElementById('adModal').style.display = 'none';
+            if (currentTaskType === 'spin') {
+                executeSpin();
+            } else {
+                adsCoins += rewardCoinPerAd;
+                updateDisplayValues();
+                alert(`Congratulations! You earned ${rewardCoinPerAd} coins.`);
+            }
+        }
+
+        function executeSpin() {
+            const wheel = document.getElementById('wheel');
+            let randomDegree = Math.floor(Math.random() * 3600) + 720;
+            wheel.style.transition = "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)";
+            wheel.style.transform = `rotate(${randomDegree}deg)`;
+            document.getElementById('spinBtn').disabled = true;
+
+            setTimeout(() => {
+                currentSpinCount++;
+                let percentage = (currentSpinCount / maxSpins) * 100;
+                document.getElementById('progressBar').style.width = percentage + '%';
+
+                spinMmkBalance += 100; 
+                updateDisplayValues();
+
+                if (currentSpinCount >= maxSpins) {
+                    document.getElementById('spinBtn').innerText = "LIMIT";
+                    document.getElementById('spinBtn').disabled = true;
+                } else {
+                    document.getElementById('spinBtn').disabled = false;
+                }
+            }, 4000);
+        }
+
+        // Admin Functions
+        function saveAdminAdsLink() {
+            let link = document.getElementById('adminAdsLinkInput').value;
+            if (link) {
+                activeAdsLink = link;
+                alert("Ads Link saved successfully!");
+            } else {
+                alert("Please enter a valid URL.");
+            }
+        }
+        function saveAdminRate() {
+            let val = parseInt(document.getElementById('adminRateInput').value);
+            if (val) {
+                coinToMmkRate = val;
+                updateDisplayValues();
+                alert("Coin to MMK exchange rate updated successfully!");
+            }
+        }
+        function saveAdCoinSetting() {
+            let val = parseInt(document.getElementById('adminAdCoin').value);
+            if (val) {
+                rewardCoinPerAd = val;
+                alert("Ad reward coin updated successfully!");
+            }
+        }
+        function requestWithdraw() {
+            let method = document.getElementById('payMethod').value;
+            let phone = document.getElementById('payPhoneNumber').value;
+            let convertedAdsMmk = adsCoins * coinToMmkRate;
+            let totalMmk = spinMmkBalance + convertedAdsMmk;
+
+            if (!phone) {
+                alert("ကျေးဇူးပြု၍ ဖုန်းနံပတ်/အကောင့်နံပတ် ထည့်ပါဦး။");
+                return;
+            }
+            alert(`Withdrawal request of ${totalMmk} MMK via ${method} (${phone}) sent to Admin!`);
+        }
+        function approveWithdraw(reqId, amount) {
+            document.getElementById(reqId).remove();
+            spinMmkBalance = 0;
+            adsCoins = 0;
+            updateDisplayValues();
+            alert("Withdrawal approved and user balance deducted!");
+        }
+
+        updateDisplayValues();
+    </script>
+</body>
+</html>

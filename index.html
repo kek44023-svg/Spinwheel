@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lucky Wheel Mini App - Ultimate Pro</title>
+    <title>Lucky Wheel Mini App - Complete Ultimate</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -280,15 +280,12 @@
         let currentTaskType = 'spin';
         let timerInterval;
 
-        // User Data Mock for Search & Ban/Unban
         let sampleUsers = {
             "@thiha_1990": { name: "Thiha (Ko Ko)", status: "Active" },
             "@user123": { name: "Aung Aung", status: "Active" },
             "@mgmg99": { name: "Mg Mg", status: "Banned" }
         };
         let searchedUserTg = "";
-
-        // Hidden Admin Tap Counter
         let avatarTapCount = 0;
 
         function handleAvatarTap() {
@@ -324,7 +321,6 @@
             document.getElementById('rateInfoText').innerText = `Rate: 1 Coin = ${coinToMmkRate} MMK (Admin Set)`;
         }
 
-        // Admin Search User Function
         function searchUserByTgId() {
             let tgId = document.getElementById('searchTgIdInput').value.trim();
             if (!tgId) {
@@ -366,7 +362,6 @@
             }
         }
 
-        // Market Converter
         function marketConvertCoins() {
             let inputCoin = parseInt(document.getElementById('marketCoinInput').value);
             if (!inputCoin || inputCoin <= 0) {
@@ -385,7 +380,6 @@
             alert(`Successfully converted ${inputCoin} coins to ${addedMmk} MMK!`);
         }
 
-        // Live Market Simulation
         setInterval(() => {
             let btcVar = (Math.random() * 10 - 4.8).toFixed(2);
             document.getElementById('btcPrice').innerText = `$64,250.00 (${btcVar >= 0 ? '+' : ''}${btcVar}%)`;
@@ -454,7 +448,6 @@
             }, 4000);
         }
 
-        // Admin Functions
         function saveAdminAdsLink() {
             let link = document.getElementById('adminAdsLinkInput').value;
             if (link) {
